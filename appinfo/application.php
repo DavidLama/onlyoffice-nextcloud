@@ -24,6 +24,7 @@ use OCP\AppFramework\Http\ContentSecurityPolicy;
 use OCP\DirectEditing\RegisterDirectEditorEvent;
 use OCP\Files\IMimeTypeDetector;
 use OCP\Util;
+use OCP\IPreview;
 
 use OCA\Viewer\Event\LoadViewer;
 
@@ -34,6 +35,9 @@ use OCA\Onlyoffice\Controller\SettingsController;
 use OCA\Onlyoffice\Crypt;
 use OCA\Onlyoffice\DirectEditor;
 use OCA\Onlyoffice\Hooks;
+use OCA\Onlyoffice\Preview\Document;
+use OCA\Onlyoffice\Preview\Presentation;
+use OCA\Onlyoffice\Preview\Spreadsheet;
 
 class Application extends App {
 
@@ -124,6 +128,16 @@ class Application extends App {
         $detector->registerType("ots", "application/vnd.oasis.opendocument.spreadsheet-template");
         $detector->registerType("otp", "application/vnd.oasis.opendocument.presentation-template");
 
+        $previewManager = $container->query(IPreview::class);
+        $previewManager->registerProvider('/application\/vnd.openxmlformats-officedocument.wordprocessingml.document/', function() use ($container) {
+			return $container->query(Document::class);
+        });
+        $previewManager->registerProvider('/application\/vnd.openxmlformats-officedocument.presentationml.presentation/', function() use ($container) {
+			return $container->query(Presentation::class);
+        });
+        $previewManager->registerProvider('/application\/vnd.openxmlformats-officedocument.spreadsheetml.sheet/', function() use ($container) {
+			return $container->query(Spreadsheet::class);
+        });
 
         $container->registerService("L10N", function ($c) {
             return $c->query("ServerContainer")->getL10N($c->query("AppName"));
