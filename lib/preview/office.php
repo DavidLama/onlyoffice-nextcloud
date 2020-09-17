@@ -207,7 +207,7 @@ abstract class Office extends Provider {
      */
     public function isAvailable(\OCP\Files\FileInfo $file) {
         $isAvailable = in_array($file->getMimetype(), $this->capabilities, true);
-		return $isAvailable;
+		return $isAvailable && $this->config->GetPreview() === true;
     }
 
     /**

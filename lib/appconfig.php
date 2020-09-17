@@ -110,6 +110,13 @@ class AppConfig {
     private $_sameTab = "sameTab";
 
     /**
+     * The config key for the setting same tab
+     *
+     * @var string
+     */
+    private $_preview = "preview";
+
+    /**
      * The config key for the chat display setting
      *
      * @var string
@@ -596,6 +603,26 @@ class AppConfig {
      */
     public function GetSameTab() {
         return $this->config->getAppValue($this->appName, $this->_sameTab, "false") === "true";
+    }
+
+    /**
+     * Save file view mode
+     *
+     * @param bool $value - preview
+     */
+    public function SetPreview($value) {
+        $this->logger->info("Set preview for files: " . json_encode($value), ["app" => $this->appName]);
+
+        $this->config->setAppValue($this->appName, $this->_preview, json_encode($value));
+    }
+
+    /**
+     * Get file view mode
+     *
+     * @return bool
+     */
+    public function GetPreview() {
+        return $this->config->getAppValue($this->appName, $this->_preview, "false") === "true";
     }
 
     /**

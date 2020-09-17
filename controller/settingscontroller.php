@@ -113,6 +113,7 @@ class SettingsController extends Controller {
             "currentServer" => $this->urlGenerator->getAbsoluteURL("/"),
             "formats" => $this->config->FormatsSetting(),
             "sameTab" => $this->config->GetSameTab(),
+            "preview" => $this->config->GetPreview(),
             "limitGroups" => $this->config->GetLimitGroups(),
             "chat" => $this->config->GetCustomizationChat(),
             "compactHeader" => $this->config->GetCustomizationCompactHeader(),
@@ -184,6 +185,7 @@ class SettingsController extends Controller {
      * @param array $defFormats - formats array with default action
      * @param array $editFormats - editable formats array
      * @param bool $sameTab - open in the same tab
+     * @param bool $preview - preview files
      * @param array $limitGroups - list of groups
      * @param bool $chat - display chat
      * @param bool $compactHeader - display compact header
@@ -197,6 +199,7 @@ class SettingsController extends Controller {
     public function SaveCommon($defFormats,
                                     $editFormats,
                                     $sameTab,
+                                    $preview,
                                     $limitGroups,
                                     $chat,
                                     $compactHeader,
@@ -209,6 +212,7 @@ class SettingsController extends Controller {
         $this->config->SetDefaultFormats($defFormats);
         $this->config->SetEditableFormats($editFormats);
         $this->config->SetSameTab($sameTab);
+        $this->config->SetPreview($preview);
         $this->config->SetLimitGroups($limitGroups);
         $this->config->SetCustomizationChat($chat);
         $this->config->SetCustomizationCompactHeader($compactHeader);

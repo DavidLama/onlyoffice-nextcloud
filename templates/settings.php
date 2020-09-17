@@ -105,6 +105,12 @@
         <label for="onlyofficeSameTab"><?php p($l->t("Open file in the same tab")) ?></label>
     </p>
 
+    <p>
+        <input type="checkbox" class="checkbox" id="onlyofficePreview"
+            <?php if ($_["preview"]) { ?>checked="checked"<?php } ?> />
+        <label for="onlyofficePreview"><?php p($l->t("Enable preview for files")) ?></label>
+    </p>
+
     <p class="onlyoffice-header"><?php p($l->t("The default application for opening the format")) ?></p>
     <div class="onlyoffice-exts">
         <?php foreach ($_["formats"] as $format => $setting) { ?>
