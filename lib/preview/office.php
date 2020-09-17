@@ -28,11 +28,15 @@ use OCP\IURLGenerator;
 use OCP\Http\Client\IClientService;
 use OCP\ISession;
 use OCP\Share\IManager;
+use OCP\Files\IRootFolder;
+
+use OCA\Files_Versions\Versions\IVersionManager;
 
 use OCA\Onlyoffice\AppConfig;
 use OCA\Onlyoffice\DocumentService;
 use OCA\Onlyoffice\Crypt;
 use OCA\Onlyoffice\FileUtility;
+use OCA\Onlyoffice\FileVersions;
 
 /**
  * Preview provider
@@ -48,11 +52,19 @@ abstract class Office extends Provider {
      */
     private $appName;
 
+    /**
+     * Root folder
+     *
+     * @var IRootFolder
+     */
+    private $root;
+
 	/** 
      * Client service
      * 
      * @var IClientService
      */
+
 	private $clientService;
 
 	/**
@@ -112,6 +124,20 @@ abstract class Office extends Provider {
     private $session;
 
     /**
+     * File version manager
+     *
+     * @var IVersionManager
+    */
+    private $versionManager;
+
+    /**
+     * File utility
+     *
+     * @var FileUtility
+     */
+    private $fileUtility;
+
+    /**
      * Capabilities mimetype
      *
      * @var Array
@@ -129,6 +155,7 @@ abstract class Office extends Provider {
 
     /**
      * @param string $appName - application name
+     * @param IRootFolder $root - root folder
      * @param IClientService $clientService - client service
      * @param ILogger $logger - logger
      * @param IL10N $trans - l10n service
@@ -138,7 +165,8 @@ abstract class Office extends Provider {
      * @param IManager $shareManager - share manager
      * @param ISession $session - session
      */
-    public function __construct(string $appName, 
+    public function __construct(string $appName,
+                                    IRootFolder $root, 
                                     IClientService $clientService, 
                                     ILogger $logger,
                                     IL10N $trans,
@@ -149,6 +177,7 @@ abstract class Office extends Provider {
                                     ISession $session
                                     ) {
         $this->appName = $appName;
+        $this->root = $root;
 		$this->clientService = $clientService;
         $this->logger = $logger;
         $this->trans = $trans;
@@ -157,6 +186,16 @@ abstract class Office extends Provider {
         $this->crypt = $crypt;
         $this->shareManager = $shareManager;
         $this->session = $session;
+
+        if (\OC::$server->getAppManager()->isInstalled("files_versions")) {
+            try {
+                $this->versionManager = \OC::$server->query(IVersionManager::class);
+            } catch (QueryException $e) {
+                $this->logger->logException($e, ["message" => "VersionManager init error", "app" => $this->appName]);
+            }
+        }
+
+        $this->fileUtility = new FileUtility($appName, $trans, $logger, $config, $shareManager, $session);
     }
 
     /**
@@ -183,13 +222,13 @@ abstract class Office extends Provider {
      * @return Image|bool false if no preview was generated
      */
 	public function getThumbnail($path, $maxX, $maxY, $scalingup, $fileview) {
-        list ($fileInfo, $extension, $key) = $this->getFileParam($path, $fileview);
+        list ($fileInfo, $extension, $key, $version) = $this->getFileParam($path, $fileview);
         if($fileInfo === null || $extension === null || $key === null) {
             return false;
         }
 
         $owner = $fileInfo->getOwner();
-        $fileUrl = $this->getUrl($fileInfo, $owner);
+        $fileUrl = $this->getUrl($fileInfo, $owner, $version);
 
         $this->documentService = new DocumentService($this->trans, $this->config);
         $imageUrl = $this->documentService->GetConvertedUri($fileUrl, $extension, self::thumbExtension, $key, false);
@@ -212,10 +251,11 @@ abstract class Office extends Provider {
      *
      * @param File $file - file
      * @param IUser $user - user with access
+     * @param int $version - file version
      *
      * @return string
      */
-    private function getUrl($file, $user = null) {
+    private function getUrl($file, $user = null, $version = 0) {
 
         $data = [
             "action" => "download",
@@ -226,6 +266,9 @@ abstract class Office extends Provider {
         if (!empty($user)) {
             $userId = $user->getUID();
             $data["userId"] = $userId;
+        }
+        if ($version > 0) {
+            $data["version"] = $version;
         }
 
         $hashUrl = $this->crypt->GetHash($data);
@@ -249,21 +292,45 @@ abstract class Office extends Provider {
      * @return array
      */
     private function getFileParam($path, $fileview) {
-        $_extension = [
-            "docx",
-            "xlsx",
-            "pptx"
-        ];
+        list ($filePath, $fileVersion) = FileVersions::splitPathVersion($path);
+        $fileVersion = !empty($fileVersion) ? $fileVersion : null;
 
         $fileInfo = $fileview->getFileInfo($path);
-        $extension = $fileInfo->getExtension();
 
-        $fileUtility = new FileUtility($this->appName, $this->trans, $this->logger, $this->config, $this->shareManager, $this->session);
-        $key = $fileUtility->getKey($fileInfo);
+        $key = $this->fileUtility->getKey($fileInfo);
+        $key = DocumentService::GenerateRevisionId($key);
 
-        if(in_array($extension, $_extension, true)) {
-            return [$fileInfo, $extension, $key];
-        };
-        return [null, null, null];
+        $versionNum = 0;
+        if($fileVersion !== null) {
+            if ($this->versionManager === null) {
+                return [null, null, null, null];
+            }
+
+            $owner = $fileInfo->getOwner();
+            $versionFolder = $this->root->getUserFolder($owner->getUID())->getParent()->get("files_versions");
+            $absolutPath = $fileInfo->getPath();
+            $relativePath = $versionFolder->getRelativePath($absolutPath);
+
+            list ($filePath, $fileVersion) = FileVersions::splitPathVersion($relativePath);
+
+            $sourceFile = $this->root->getUserFolder($fileInfo->getOwner()->getUID())->get($filePath);
+
+            $fileInfo = $sourceFile->getFileInfo();
+
+            $versions = array_reverse($this->versionManager->getVersionsForFile($owner, $fileInfo));
+
+            foreach ($versions as $version) {
+                $versionNum = $versionNum + 1;
+
+                $versionId = $version->getRevisionId();
+                if($versionId === $fileVersion) {
+                    break;
+                }
+            }
+        }
+
+        $fileExtension = $fileInfo->getExtension();
+
+        return [$fileInfo, $fileExtension, $key, $versionNum];
     }
 }
