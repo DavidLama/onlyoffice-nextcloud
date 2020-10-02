@@ -33,6 +33,7 @@ use OCP\ILogger;
 use OCP\IRequest;
 use OCP\IUserManager;
 use OCP\IUserSession;
+use OCP\IURLGenerator;
 use OCP\Lock\LockedException;
 use OCP\Share\Exceptions\ShareNotFound;
 use OCP\Share\IManager;
@@ -117,6 +118,13 @@ class CallbackController extends Controller {
     private $versionManager;
 
     /**
+     * Url generator service
+     *
+     * @var IURLGenerator
+     */
+    private $urlGenerator;
+
+    /**
      * Status of the document
      */
     private const TrackerStatus_Editing = 1;
@@ -147,7 +155,8 @@ class CallbackController extends Controller {
                                     ILogger $logger,
                                     AppConfig $config,
                                     Crypt $crypt,
-                                    IManager $shareManager
+                                    IManager $shareManager,
+                                    IURLGenerator $urlGenerator
                                     ) {
         parent::__construct($AppName, $request);
 
@@ -159,6 +168,7 @@ class CallbackController extends Controller {
         $this->config = $config;
         $this->crypt = $crypt;
         $this->shareManager = $shareManager;
+        $this->urlGenerator = $urlGenerator;
 
         if (\OC::$server->getAppManager()->isInstalled("files_versions")) {
             try {
@@ -476,7 +486,7 @@ class CallbackController extends Controller {
                     $curExt = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
                     $downloadExt = strtolower(pathinfo($url, PATHINFO_EXTENSION));
 
-                    $documentService = new DocumentService($this->trans, $this->config);
+                    $documentService = new DocumentService($this->trans, $this->config, $this->urlGenerator, $this->crypt);
                     if ($downloadExt !== $curExt) {
                         $key =  DocumentService::GenerateRevisionId($fileId . $url);
 
