@@ -23,9 +23,49 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
+use OCP\IURLGenerator;
+use OCP\IL10N;
+
+use OCA\Onlyoffice\AppConfig;
+use OCA\Onlyoffice\DocumentService;
+use OCA\Onlyoffice\Crypt;
+
 class DocumentServerTest extends Command {
-    public function __construct() {
-		parent::__construct();
+
+    /**
+     * Application configuration
+     *
+     * @var AppConfig
+     */
+    private $config;
+
+    /**
+     * l10n service
+     *
+     * @var IL10N
+     */
+    private $trans;
+
+    /**
+     * Url generator service
+     *
+     * @var IURLGenerator
+     */
+    private $urlGenerator;
+
+    /**
+     * Hash generator
+     *
+     * @var Crypt
+     */
+    private $crypt;
+
+    public function __construct(AppConfig $config, IL10N $trans, IURLGenerator $urlGenerator, Crypt $crypt) {
+        parent::__construct();
+        $this->config = $config;
+        $this->trans = $trans;
+        $this->urlGenerator = $urlGenerator;
+        $this->crypt = $crypt;
     }
 
     protected function configure() {
@@ -35,6 +75,23 @@ class DocumentServerTest extends Command {
     }
 
     protected function execute(InputInterface $input, OutputInterface $output) {
-        
+        $documentserver = $this->config->GetDocumentServerUrl(true);
+        if(empty($documentserver)) {
+            $output->writeln("<info>Document server is't configured</info>");
+            return 1;
+        }
+
+        $documentService = new DocumentService($this->trans, $this->config, $this->urlGenerator, $this->crypt);
+
+        list ($error, $version) = $documentService->checkDocServiceUrl();
+        $this->config->SetSettingsError($error);
+
+        if(!empty($error)) {
+            $output->writeln("<error>Error connection: $error</error>");
+            return 1;
+        } else {
+            $output->writeln("<info>Document server $documentserver version $version is successfully connected</info>");
+            return 0;
+        }
     }
 }
