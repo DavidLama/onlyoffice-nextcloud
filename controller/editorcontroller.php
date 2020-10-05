@@ -470,14 +470,20 @@ class EditorController extends Controller {
             $historyItem = [
                 "created" => $this->trans->l("datetime", $version->getTimestamp(), ["width" => "short"]),
                 "key" => $key,
-                "user" => [
-                    "id" => $this->buildUserId($ownerId),
-                    "name" => $owner->getDisplayName()
-                ],
                 "version" => $versionNum
             ];
 
             $versionId = $version->getRevisionId();
+
+            $author = FileVersions::getVersionAuthor($ownerId, $fileId, $versionId);
+            $authorId = $author !== null ? $author["id"] : $ownerId;
+            $authorName = $author !== null ? $author["name"] : $owner->getDisplayName();
+
+            $historyItem["user"] = [
+                "id" => $this->buildUserId($authorId),
+                "name" => $authorName
+            ];
+
             $historyData = FileVersions::getHistoryData($ownerId, $fileId, $versionId, $prevVersion);
             if ($historyData !== null) {
                 $historyItem["changes"] = $historyData["changes"];
@@ -498,14 +504,19 @@ class EditorController extends Controller {
             "version" => $versionNum + 1
         ];
 
-        if ($owner !== null) {
+        $versionId = $file->getFileInfo()->getMtime();
+
+        $author = FileVersions::getVersionAuthor($ownerId, $fileId, $versionId);
+        $authorId = $author !== null ? $author["id"] : $owner !== null ? $ownerId : null;
+        $authorName = $author !== null ? $author["name"] : $owner !== null ? $owner->getDisplayName() : null;
+
+        if($authorId !== null && $authorName !== null) {
             $historyItem["user"] = [
-                "id" => $this->buildUserId($owner->getUID()),
-                "name" => $owner->getDisplayName()
+                "id" => $this->buildUserId($authorId),
+                "name" => $authorName
             ];
         }
 
-        $versionId = $file->getFileInfo()->getMtime();
         $historyData = FileVersions::getHistoryData($ownerId, $fileId, $versionId, $prevVersion);
         if ($historyData !== null) {
             $historyItem["changes"] = $historyData["changes"];
