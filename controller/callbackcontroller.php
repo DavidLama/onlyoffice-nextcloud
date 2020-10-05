@@ -538,7 +538,16 @@ class CallbackController extends Controller {
                             $changesurl = $this->config->ReplaceDocumentServerUrlToInternal($changesurl);
                             $changes = $documentService->Request($changesurl);
                         }
-                        FileVersions::saveHistory($file->getFileInfo(), $history, $changes, $prevVersion);
+
+                        $author = [];
+                        if(!empty($user)) {
+                            $author = [
+                                "id" => $user->getUID(),
+                                "name" => $user->getDisplayName()
+                            ];
+                        };
+
+                        FileVersions::saveHistory($file->getFileInfo(), $history, $changes, $prevVersion, $author);
                     }
 
                     $result = 0;

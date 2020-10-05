@@ -51,6 +51,13 @@ class FileVersions {
     private static $historyExt = ".json";
 
     /**
+     * File name contain author
+     *
+     * @var string
+     */
+    private static $author = "_author";
+
+    /**
      * Split file path and version id
      *
      * @param string $pathVersion - version path
@@ -231,8 +238,9 @@ class FileVersions {
      * @param array $history - file history
      * @param string $changes - file changes
      * @param string $prevVersion - previous version for check
+     * @param array $author - version author
      */
-    public static function saveHistory($fileInfo, $history, $changes, $prevVersion) {
+    public static function saveHistory($fileInfo, $history, $changes, $prevVersion, $author) {
         $logger = \OC::$server->getLogger();
 
         $owner = $fileInfo->getOwner();
@@ -259,6 +267,10 @@ class FileVersions {
             $historyPath = $path . "/" . $versionId . self::$historyExt;
             $view->touch($historyPath);
             $view->file_put_contents($historyPath, json_encode($history));
+
+            $authorPath = $path . "/" . $versionId . self::$author;
+            $view->touch($authorPath);
+            $view->file_put_contents($authorPath, json_encode($author));
 
             $logger->debug("saveHistory: $fileId for $ownerId stored changes $changesPath history $historyPath", ["app" => self::$appName]);
         } catch (\Exception $e) {
