@@ -507,13 +507,15 @@ class EditorController extends Controller {
         $versionId = $file->getFileInfo()->getMtime();
 
         $author = FileVersions::getVersionAuthor($ownerId, $fileId, $versionId);
-        $authorId = $author !== null ? $author["id"] : $owner !== null ? $ownerId : null;
-        $authorName = $author !== null ? $author["name"] : $owner !== null ? $owner->getDisplayName() : null;
-
-        if($authorId !== null && $authorName !== null) {
+        if($author !== null) {
             $historyItem["user"] = [
-                "id" => $this->buildUserId($authorId),
-                "name" => $authorName
+                "id" => $this->buildUserId($author["id"]),
+                "name" => $author["name"]
+            ];
+        } elseif ($owner !== null) {
+            $historyItem["user"] = [
+                "id" => $this->buildUserId($ownerId),
+                "name" => $owner->getDisplayName()
             ];
         }
 
