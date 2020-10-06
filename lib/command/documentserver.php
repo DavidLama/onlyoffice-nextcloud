@@ -31,7 +31,7 @@ use OCA\Onlyoffice\AppConfig;
 use OCA\Onlyoffice\DocumentService;
 use OCA\Onlyoffice\Crypt;
 
-class DocumentServerTest extends Command {
+class DocumentServer extends Command {
 
     /**
      * Application configuration

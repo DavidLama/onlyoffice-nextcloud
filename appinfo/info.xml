@@ -36,6 +36,6 @@
         <admin-section>OCA\Onlyoffice\AdminSection</admin-section>
     </settings>
     <commands>
-		<command>OCA\Onlyoffice\Command\DocumentServerTest</command>
+		<command>OCA\Onlyoffice\Command\DocumentServer</command>
 	</commands>
 </info>
