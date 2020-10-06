@@ -20,10 +20,8 @@
 namespace OCA\Onlyoffice;
 
 use OCP\IL10N;
-use OCP\IURLGenerator;
 
 use OCA\Onlyoffice\AppConfig;
-use OCA\Onlyoffice\Crypt;
 
 /**
  * Class service connector to Document Service
@@ -54,28 +52,12 @@ class DocumentService {
     private $config;
 
     /**
-     * Url generator service
-     *
-     * @var IURLGenerator
-     */
-    private $urlGenerator;
-
-    /**
-     * Hash generator
-     *
-     * @var Crypt
-     */
-    private $crypt;
-
-    /**
      * @param IL10N $trans - l10n service
      * @param AppConfig $config - application configutarion
      */
-    public function __construct(IL10N $trans, AppConfig $appConfig, IURLGenerator $urlGenerator, Crypt $crypt) {
+    public function __construct(IL10N $trans, AppConfig $appConfig) {
         $this->trans = $trans;
         $this->config = $appConfig;
-        $this->urlGenerator = $urlGenerator;
-        $this->crypt = $crypt;
     }
 
     /**
@@ -388,15 +370,18 @@ class DocumentService {
     /**
      * Checking document service location
      *
+     * @param OCP\IURLGenerator $urlGenerator - url generator
+     * @param OCA\Onlyoffice\Crypt $crypt -crypt
+     * 
      * @return array
      */
-    public function checkDocServiceUrl() {
+    public function checkDocServiceUrl($urlGenerator, $crypt) {
         $logger = \OC::$server->getLogger();
         $version = null;
 
         try {
 
-            if (preg_match("/^https:\/\//i", $this->urlGenerator->getAbsoluteURL("/"))
+            if (preg_match("/^https:\/\//i", $urlGenerator->getAbsoluteURL("/"))
                 && preg_match("/^http:\/\//i", $this->config->GetDocumentServerUrl())) {
                 throw new \Exception($this->trans->t("Mixed Active Content is not allowed. HTTPS address for Document Server is required."));
             }
@@ -441,10 +426,10 @@ class DocumentService {
         $convertedFileUri = null;
         try {
 
-            $hashUrl = $this->crypt->GetHash(["action" => "empty"]);
-            $fileUrl = $this->urlGenerator->linkToRouteAbsolute(self::$appName . ".callback.emptyfile", ["doc" => $hashUrl]);
+            $hashUrl = $crypt->GetHash(["action" => "empty"]);
+            $fileUrl = $urlGenerator->linkToRouteAbsolute(self::$appName . ".callback.emptyfile", ["doc" => $hashUrl]);
             if (!empty($this->config->GetStorageUrl())) {
-                $fileUrl = str_replace($this->urlGenerator->getAbsoluteURL("/"), $this->config->GetStorageUrl(), $fileUrl);
+                $fileUrl = str_replace($urlGenerator->getAbsoluteURL("/"), $this->config->GetStorageUrl(), $fileUrl);
             }
 
             $convertedFileUri = $this->GetConvertedUri($fileUrl, "docx", "docx", "check_" . rand());

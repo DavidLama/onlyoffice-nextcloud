@@ -81,9 +81,9 @@ class DocumentServerTest extends Command {
             return 1;
         }
 
-        $documentService = new DocumentService($this->trans, $this->config, $this->urlGenerator, $this->crypt);
+        $documentService = new DocumentService($this->trans, $this->config);
 
-        list ($error, $version) = $documentService->checkDocServiceUrl();
+        list ($error, $version) = $documentService->checkDocServiceUrl($this->urlGenerator, $this->crypt);
         $this->config->SetSettingsError($error);
 
         if(!empty($error)) {

@@ -486,7 +486,7 @@ class CallbackController extends Controller {
                     $curExt = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
                     $downloadExt = strtolower(pathinfo($url, PATHINFO_EXTENSION));
 
-                    $documentService = new DocumentService($this->trans, $this->config, $this->urlGenerator, $this->crypt);
+                    $documentService = new DocumentService($this->trans, $this->config);
                     if ($downloadExt !== $curExt) {
                         $key =  DocumentService::GenerateRevisionId($fileId . $url);
 

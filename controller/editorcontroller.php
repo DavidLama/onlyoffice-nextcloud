@@ -316,7 +316,7 @@ class EditorController extends Controller {
         }
 
         $newFileUri = null;
-        $documentService = new DocumentService($this->trans, $this->config, $this->urlGenerator, $this->crypt);
+        $documentService = new DocumentService($this->trans, $this->config);
         $key = $this->fileUtility->getKey($file);
         $fileUrl = $this->getUrl($file, $user, $shareToken);
         try {
@@ -391,7 +391,7 @@ class EditorController extends Controller {
         $url = $this->config->ReplaceDocumentServerUrlToInternal($url);
 
         try {
-            $documentService = new DocumentService($this->trans, $this->config, $this->urlGenerator, $this->crypt);
+            $documentService = new DocumentService($this->trans, $this->config);
             $newData = $documentService->Request($url);
         } catch (\Exception $e) {
             $this->logger->logException($e, ["message" => "Failed to download file for saving: $url", "app" => $this->appName]);
