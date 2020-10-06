@@ -21,6 +21,7 @@ namespace OCA\Onlyoffice\Command;
 
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 use OCP\IURLGenerator;
@@ -69,29 +70,40 @@ class DocumentServerTest extends Command {
     }
 
     protected function configure() {
-		$this
-			->setName('onlyoffice:documentserver-test')
-            ->setDescription('Document server test connection');
+        $this
+            ->setName('onlyoffice:documentserver')
+            ->setDescription('Manage document server')
+            ->addOption('check',
+                         null,
+                         InputOption::VALUE_NONE,
+                         'Check connection document server');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output) {
+        $check = $input->getOption('check');
+
         $documentserver = $this->config->GetDocumentServerUrl(true);
         if(empty($documentserver)) {
             $output->writeln("<info>Document server is't configured</info>");
             return 1;
         }
 
-        $documentService = new DocumentService($this->trans, $this->config);
+        if($check) {
+            $documentService = new DocumentService($this->trans, $this->config);
 
-        list ($error, $version) = $documentService->checkDocServiceUrl($this->urlGenerator, $this->crypt);
-        $this->config->SetSettingsError($error);
+            list ($error, $version) = $documentService->checkDocServiceUrl($this->urlGenerator, $this->crypt);
+            $this->config->SetSettingsError($error);
 
-        if(!empty($error)) {
-            $output->writeln("<error>Error connection: $error</error>");
-            return 1;
-        } else {
-            $output->writeln("<info>Document server $documentserver version $version is successfully connected</info>");
-            return 0;
+            if(!empty($error)) {
+                $output->writeln("<error>Error connection: $error</error>");
+                return 1;
+            } else {
+                $output->writeln("<info>Document server $documentserver version $version is successfully connected</info>");
+                return 0;
+            }
         }
+
+        $output->writeln("<info>The current document server: $documentserver</info>");
+        return 0;
     }
 }
