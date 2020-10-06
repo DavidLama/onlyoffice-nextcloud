@@ -539,6 +539,10 @@ class CallbackController extends Controller {
                             $changes = $documentService->Request($changesurl);
                         }
 
+                        FileVersions::saveHistory($file->getFileInfo(), $history, $changes, $prevVersion);
+                    }
+
+                    if($this->versionManager !== null) {
                         $author = [];
                         if(!empty($user)) {
                             $author = [
@@ -547,7 +551,7 @@ class CallbackController extends Controller {
                             ];
                         };
 
-                        FileVersions::saveHistory($file->getFileInfo(), $history, $changes, $prevVersion, $author);
+                        FileVersions::saveAuthor($file->getFileInfo(), $author);
                     }
 
                     $result = 0;

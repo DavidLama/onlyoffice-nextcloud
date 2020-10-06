@@ -270,9 +270,8 @@ class FileVersions {
      * @param array $history - file history
      * @param string $changes - file changes
      * @param string $prevVersion - previous version for check
-     * @param array $author - version author
      */
-    public static function saveHistory($fileInfo, $history, $changes, $prevVersion, $author) {
+    public static function saveHistory($fileInfo, $history, $changes, $prevVersion) {
         $logger = \OC::$server->getLogger();
 
         $owner = $fileInfo->getOwner();
@@ -299,10 +298,6 @@ class FileVersions {
             $historyPath = $path . "/" . $versionId . self::$historyExt;
             $view->touch($historyPath);
             $view->file_put_contents($historyPath, json_encode($history));
-
-            $authorPath = $path . "/" . $versionId . self::$author;
-            $view->touch($authorPath);
-            $view->file_put_contents($authorPath, json_encode($author));
 
             $logger->debug("saveHistory: $fileId for $ownerId stored changes $changesPath history $historyPath", ["app" => self::$appName]);
         } catch (\Exception $e) {
@@ -367,6 +362,38 @@ class FileVersions {
         if ($view->file_exists($changesPath)) {
             $view->unlink($changesPath);
             $logger->debug("deleteVersion $changesPath", ["app" => self::$appName]);
+        }
+    }
+
+    /**
+     * Save file author
+     *
+     * @param OCP\Files\FileInfo $fileInfo - file info
+     * @param array $author - version author
+     */
+    public static function saveAuthor($fileInfo, $author) {
+        $logger = \OC::$server->getLogger();
+
+        $owner = $fileInfo->getOwner();
+
+        if ($owner === null) {
+            return;
+        }
+
+        $ownerId = $owner->getUID();
+        $fileId = $fileInfo->getId();
+        $versionId = $fileInfo->getMtime();
+
+        list ($view, $path) = self::getView($ownerId, $fileId, true);
+
+        try {
+            $authorPath = $path . "/" . $versionId . self::$author;
+            $view->touch($authorPath);
+            $view->file_put_contents($authorPath, json_encode($author));
+
+            $logger->debug("saveAuthor: $fileId for $ownerId stored author $authorPath", ["app" => self::$appName]);
+        } catch (\Exception $e) {
+            $logger->logException($e, ["message" => "saveAuthor: save $fileId author error", "app" => self::$appName]);
         }
     }
 
